@@ -73,10 +73,11 @@ Do not use the Laravel MySQL credentials here.
 
 ## 4. Build and start
 
-Set the public API URL before building because it is compiled into React:
+For the single-domain setup, leave `VITE_API_BASE_URL` empty. The frontend
+will call relative `/api/...` URLs:
 
 ```bash
-export VITE_API_BASE_URL=https://api.aven.example.com
+export VITE_API_BASE_URL=
 docker compose build
 docker compose up -d
 docker compose ps
@@ -95,14 +96,14 @@ docker network connect aven-network nginx-proxy-manager
 
 If it is already connected, Docker will report that it is already attached.
 
-Create these Proxy Hosts:
+Create one Proxy Host:
 
 ```text
-aven.example.com      -> aven-web:80
-api.aven.example.com  -> aven-api:8080
+aven.nelsonhawk.dev -> aven-web:80
 ```
 
-Enable SSL and force HTTPS for both hosts.
+In Nginx Proxy Manager, configure `/api` to forward to `aven-api:8080`.
+Enable SSL and force HTTPS.
 
 ## 6. Verify
 
@@ -119,7 +120,7 @@ The API request should return `401 Unauthorized` without a token.
 ```bash
 cd /opt/aven-web-app
 git pull
-export VITE_API_BASE_URL=https://api.aven.example.com
+export VITE_API_BASE_URL=
 docker compose build
 docker compose up -d
 ```
