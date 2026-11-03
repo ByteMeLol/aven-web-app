@@ -83,6 +83,10 @@ docker compose up -d
 docker compose ps
 ```
 
+The Compose file explicitly supplies the PostgreSQL JDBC URL, driver, and
+Hibernate dialect to `aven-api`. This prevents the local H2 defaults from
+being selected in the container.
+
 The PostgreSQL data is stored in the named volume `aven_postgres_data`.
 Nothing in this Compose file stops or modifies the Laravel/MySQL services.
 
