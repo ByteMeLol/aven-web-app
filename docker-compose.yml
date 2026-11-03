@@ -1,4 +1,21 @@
 services:
+  aven-postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${AVEN_POSTGRES_DB:?AVEN_POSTGRES_DB must be set in .env}
+      POSTGRES_USER: ${AVEN_POSTGRES_USER:?AVEN_POSTGRES_USER must be set in .env}
+      POSTGRES_PASSWORD: ${AVEN_POSTGRES_PASSWORD:?AVEN_POSTGRES_PASSWORD must be set in .env}
+    volumes:
+      - aven_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    networks:
+      - aven-network
+
   aven-api:
     build:
       context: ./aven
@@ -7,6 +24,13 @@ services:
     restart: unless-stopped
     env_file:
       - ./deploy/aven-api.env
+    environment:
+      DATABASE_URL: jdbc:postgresql://aven-postgres:5432/${AVEN_POSTGRES_DB}
+      DATABASE_USERNAME: ${AVEN_POSTGRES_USER}
+      DATABASE_PASSWORD: ${AVEN_POSTGRES_PASSWORD}
+    depends_on:
+      aven-postgres:
+        condition: service_healthy
     networks:
       - aven-network
 
@@ -27,3 +51,6 @@ networks:
   aven-network:
     external: true
     name: ${AVEN_DOCKER_NETWORK:-aven-network}
+
+volumes:
+  aven_postgres_data:

@@ -1,124 +1,56 @@
 # Aven deployment: local host to server
 
-This deployment is separate from the Laravel/MySQL Compose project. It runs:
+This stack is separate from the Laravel/MySQL stack. It creates:
 
 - `aven-api`: Spring Boot API
 - `aven-web`: React/Vite frontend served by Nginx
-- The existing PostgreSQL container: external database, not recreated here
+- `aven-postgres`: dedicated PostgreSQL 16 database
 
-Do not copy the local `.env` files to the server. Create a server-only API
-environment file from the example.
-
-## 1. Prepare the local project
-
-From the repository root:
-
-```bash
-cd /path/to/aven-web-app
-npm --prefix aven-finance ci
-cd aven
-./mvnw test
-cd ../aven-finance
-npm run build
-cd ..
-```
-
-The local validation commands do not start or modify Docker containers.
-
-## 2. Choose the public domains
-
-Use two hostnames in Nginx Proxy Manager:
-
-```text
-aven.example.com      -> aven-web:80
-api.aven.example.com  -> aven-api:8080
-```
-
-Replace these examples with your real domain names.
-
-The frontend image is built with the API URL. Set it before building:
-
-```bash
-export VITE_API_BASE_URL=https://api.aven.example.com
-```
-
-## 3. Transfer the project to the server
-
-Commit or copy the project without secrets:
-
-```bash
-rsync -az --exclude='.env' --exclude='aven-finance/.env.local' \
-  ./ user@your-server:/opt/aven-web-app/
-```
-
-Alternatively, push to a private Git repository and clone it on the server.
-
-## 4. Inspect the existing PostgreSQL container on the server
-
-Run these commands on the server:
-
-```bash
-docker ps --format 'table {{.Names}}\t{{.Image}}\t{{.Status}}'
-docker inspect <postgres-container> \
-  --format '{{range .Config.Env}}{{println .}}{{end}}' \
-  | grep -E '^(POSTGRES_DB|POSTGRES_USER)='
-docker inspect <postgres-container> \
-  --format '{{range $name, $network := .NetworkSettings.Networks}}{{println $name}}{{end}}'
-```
-
-Do not send or commit the PostgreSQL password.
-
-The existing PostgreSQL database must have a separate database for Aven, for
-example `aven`. Do not reuse the Laravel/MySQL database. If the PostgreSQL
-container does not already have an `aven` database and user, create them using
-your server's normal PostgreSQL administration process.
-
-## 5. Create a shared Docker network
-
-On the server, choose the network printed by the previous command. The
-PostgreSQL container and Aven API must be on the same network:
-
-```bash
-docker network connect <postgres-network> <postgres-container>
-```
-
-Use that same network name when starting the Aven Compose stack:
-
-```bash
-export AVEN_DOCKER_NETWORK=<postgres-network>
-```
-
-If you prefer a dedicated network, create it and connect PostgreSQL to it:
-
-```bash
-docker network create aven-network
-docker network connect aven-network <postgres-container>
-export AVEN_DOCKER_NETWORK=aven-network
-```
-
-The `docker-compose.yml` file uses this existing external network. It does not
-create or stop PostgreSQL, MySQL, Laravel, Nginx Proxy Manager, or any other
-existing service.
-
-## 6. Create the Spring Boot server environment
+## 1. Transfer the project
 
 On the server:
 
 ```bash
+sudo mkdir -p /opt/aven-web-app
+sudo chown -R "$USER":"$USER" /opt/aven-web-app
+git clone https://github.com/ByteMeLol/aven-web-app.git /opt/aven-web-app
 cd /opt/aven-web-app
-cp deploy/aven-api.env.example deploy/aven-api.env
-chmod 600 deploy/aven-api.env
 ```
 
-Edit `deploy/aven-api.env` and set:
+Do not copy local `.env` files or secrets.
+
+## 2. Create the Compose environment
+
+```bash
+cp .env.example .env
+chmod 600 .env
+nano .env
+```
+
+Set:
+
+```env
+AVEN_POSTGRES_DB=aven
+AVEN_POSTGRES_USER=aven
+AVEN_POSTGRES_PASSWORD=<strong-separate-postgres-password>
+AVEN_DOCKER_NETWORK=aven-network
+```
+
+These credentials belong only to Aven. They are separate from the Laravel
+database (`mysql`, database `2bros`).
+
+## 3. Create the API environment
+
+```bash
+cp deploy/aven-api.env.example deploy/aven-api.env
+chmod 600 deploy/aven-api.env
+nano deploy/aven-api.env
+```
+
+Set the application values:
 
 ```env
 PORT=8080
-DATABASE_URL=jdbc:postgresql://<postgres-container>:5432/aven
-DATABASE_USERNAME=<aven-postgres-user>
-DATABASE_PASSWORD=<aven-postgres-password>
-DATABASE_DRIVER=org.postgresql.Driver
-DATABASE_PLATFORM=org.hibernate.dialect.PostgreSQLDialect
 AVEN_JWT_SECRET=<new-production-base64-secret>
 AVEN_FRONTEND_ORIGIN=https://aven.example.com
 AVEN_EMAIL=<smtp-user>
@@ -130,90 +62,70 @@ R2_BUCKET_NAME=aven-assets
 R2_ENDPOINT=<r2-endpoint>
 ```
 
-The database host must be the PostgreSQL container name or network alias. Do
-not use `localhost` inside the API container.
+The Compose file supplies the PostgreSQL URL, username, and password to the
+API from the root `.env`:
 
-Generate a new JWT secret for production and do not reuse a development
-secret.
+```text
+jdbc:postgresql://aven-postgres:5432/aven
+```
 
-## 7. Build and start Aven
+Do not use the Laravel MySQL credentials here.
 
-On the server:
+## 4. Build and start
+
+Set the public API URL before building because it is compiled into React:
 
 ```bash
-cd /opt/aven-web-app
-export AVEN_DOCKER_NETWORK=<postgres-network>
 export VITE_API_BASE_URL=https://api.aven.example.com
 docker compose build
 docker compose up -d
 docker compose ps
+```
+
+The PostgreSQL data is stored in the named volume `aven_postgres_data`.
+Nothing in this Compose file stops or modifies the Laravel/MySQL services.
+
+## 5. Connect Nginx Proxy Manager
+
+Connect Nginx Proxy Manager to the Aven network:
+
+```bash
+docker network connect aven-network nginx-proxy-manager
+```
+
+If it is already connected, Docker will report that it is already attached.
+
+Create these Proxy Hosts:
+
+```text
+aven.example.com      -> aven-web:80
+api.aven.example.com  -> aven-api:8080
+```
+
+Enable SSL and force HTTPS for both hosts.
+
+## 6. Verify
+
+```bash
 docker compose logs --tail=100 aven-api
-```
-
-The frontend is served internally on port 80. The API is served internally on
-port 8080. No host ports are published because Nginx Proxy Manager reaches
-both containers over the shared Docker network.
-
-## 8. Configure Nginx Proxy Manager
-
-Create a Proxy Host for the frontend:
-
-```text
-Domain: aven.example.com
-Forward hostname/IP: aven-web
-Forward port: 80
-```
-
-Create a Proxy Host for the API:
-
-```text
-Domain: api.aven.example.com
-Forward hostname/IP: aven-api
-Forward port: 8080
-```
-
-Enable SSL and force HTTPS for both hosts. Nginx Proxy Manager must also be
-connected to the same Docker network:
-
-```bash
-docker network connect <postgres-network> nginx-proxy-manager
-```
-
-## 9. Verify the deployment
-
-Run on the server:
-
-```bash
-docker compose ps
 curl -I https://aven.example.com
 curl -i https://api.aven.example.com/api/users/me
 ```
 
-The API request should return `401 Unauthorized` without a token. That
-confirms that the API is reachable and protected.
+The API request should return `401 Unauthorized` without a token.
 
-Register a test user through the frontend, verify the email, and then confirm
-that the account list and transactions persist after restarting `aven-api`.
-
-## 10. Updates and rollback
-
-For an update:
+## 7. Updates
 
 ```bash
 cd /opt/aven-web-app
 git pull
-export AVEN_DOCKER_NETWORK=<postgres-network>
 export VITE_API_BASE_URL=https://api.aven.example.com
 docker compose build
 docker compose up -d
 ```
 
-Keep the previous image tags if you need to roll back. Never run
-`docker compose down -v`; that can remove named data volumes if the Compose
-file is later changed to manage them.
+Never run `docker compose down -v`; it can remove the PostgreSQL data volume.
 
-## Database note
-
-The application currently uses Hibernate `ddl-auto=update` to create the
-finance tables. Before handling real money, replace this with reviewed Flyway
-migrations and set `spring.jpa.hibernate.ddl-auto=validate`.
+The application currently uses Hibernate `ddl-auto=update`. Before real-money
+production, replace this with reviewed Flyway migrations and use
+`ddl-auto=validate`.
