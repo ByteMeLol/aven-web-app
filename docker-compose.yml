@@ -1,0 +1,29 @@
+services:
+  aven-api:
+    build:
+      context: ./aven
+      dockerfile: Dockerfile
+    image: aven-api:latest
+    restart: unless-stopped
+    env_file:
+      - ./deploy/aven-api.env
+    networks:
+      - aven-network
+
+  aven-web:
+    build:
+      context: ./aven-finance
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-https://api.example.com}
+    image: aven-web:latest
+    restart: unless-stopped
+    depends_on:
+      - aven-api
+    networks:
+      - aven-network
+
+networks:
+  aven-network:
+    external: true
+    name: ${AVEN_DOCKER_NETWORK:-aven-network}
