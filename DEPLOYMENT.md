@@ -73,11 +73,10 @@ Do not use the Laravel MySQL credentials here.
 
 ## 4. Build and start
 
-For the single-domain setup, leave `VITE_API_BASE_URL` empty. The frontend
-will call relative `/api/...` URLs:
+For the two-domain setup, set the public API URL before building the frontend:
 
 ```bash
-export VITE_API_BASE_URL=
+export VITE_API_BASE_URL=https://api.aven.nelsonhawk.dev
 docker compose build
 docker compose up -d
 docker compose ps
@@ -95,26 +94,28 @@ Nothing in this Compose file stops or modifies the Laravel/MySQL services.
 Connect Nginx Proxy Manager to the Aven network:
 
 ```bash
-docker network connect aven-network nginx-proxy-manager
+docker network connect proxy nginx-proxy-manager
 ```
 
 If it is already connected, Docker will report that it is already attached.
 
-Create one Proxy Host:
+Create two Proxy Hosts:
 
 ```text
 aven.nelsonhawk.dev -> aven-web:80
+api.aven.nelsonhawk.dev -> aven-api:8080
 ```
 
-In Nginx Proxy Manager, configure `/api` to forward to `aven-api:8080`.
-Enable SSL and force HTTPS.
+Enable SSL and force HTTPS for both hosts. Request a certificate that includes
+the exact hostname `api.aven.nelsonhawk.dev`; the API host must not be left
+without a certificate or pointed at a different Proxy Host.
 
 ## 6. Verify
 
 ```bash
 docker compose logs --tail=100 aven-api
 curl -I https://aven.example.com
-curl -i https://api.aven.example.com/api/users/me
+curl -i https://api.aven.nelsonhawk.dev/api/users/me
 ```
 
 The API request should return `401 Unauthorized` without a token.
@@ -124,7 +125,7 @@ The API request should return `401 Unauthorized` without a token.
 ```bash
 cd /opt/aven-web-app
 git pull
-export VITE_API_BASE_URL=
+export VITE_API_BASE_URL=https://api.aven.nelsonhawk.dev
 docker compose build
 docker compose up -d
 ```

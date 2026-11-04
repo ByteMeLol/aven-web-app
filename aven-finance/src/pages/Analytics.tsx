@@ -151,7 +151,7 @@ export default function Analytics() {
       value: money(savings, currency),
       note: 'Income minus expenses',
       icon: FiDollarSign,
-      iconClass: 'bg-blue-50 text-blue-700',
+      iconClass: 'bg-emerald-50 text-emerald-700',
     },
     {
       title: 'Savings rate',

@@ -49,15 +49,17 @@ export default function Accounts() {
       return;
     }
 
-    addAccount({
+    void addAccount({
       name,
       type,
       balance,
       currency: accountCurrency,
+    }).then((saved) => {
+      if (saved) {
+        setError("");
+        setShowForm(false);
+      }
     });
-
-    setError("");
-    setShowForm(false);
   }
 
   function iconFor(type: string) {
@@ -129,7 +131,7 @@ export default function Accounts() {
               Preferred currency
             </p>
 
-            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
+            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
               <FiTrendingUp size={21} />
             </span>
           </div>

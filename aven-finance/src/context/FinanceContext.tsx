@@ -1,5 +1,6 @@
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useState,
@@ -19,10 +20,12 @@ type FinanceContextType = {
   setCurrency: (currency: CurrencyCode) => void;
   addTransaction: (
     transaction: Omit<Transaction, "id" | "date">,
-  ) => void;
+  ) => Promise<boolean>;
   addAccount: (
     account: Omit<FinanceAccount, "id">,
-  ) => void;
+  ) => Promise<boolean>;
+  notice: { type: "success" | "error"; message: string } | null;
+  dismissNotice: () => void;
 };
 
 const FinanceContext = createContext<FinanceContextType | null>(null);
@@ -101,14 +104,23 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [accounts, setAccounts] = useState<FinanceAccount[]>([]);
   const [currency, setCurrencyState] = useState<CurrencyCode>("USD");
+  const [notice, setNotice] = useState<FinanceContextType["notice"]>(null);
+
+  function showNotice(type: "success" | "error", message: string) {
+    setNotice({ type, message });
+  }
+
+  const dismissNotice = useCallback(() => setNotice(null), []);
 
   async function setCurrency(nextCurrency: CurrencyCode) {
     try {
       await api.put("/api/wallet/currency", { currency: nextCurrency });
       setCurrencyState(nextCurrency);
+      showNotice("success", `Currency changed to ${nextCurrency}.`);
       window.dispatchEvent(new Event("aven-finance-changed"));
     } catch (error) {
       console.error("Unable to change Aven Wallet currency:", error);
+      showNotice("error", "Currency could not be changed. Please try again.");
     }
   }
 
@@ -166,9 +178,9 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  function addTransaction(
+  async function addTransaction(
     transaction: Omit<Transaction, "id" | "date">,
-  ) {
+  ): Promise<boolean> {
     const newTransaction: Transaction = {
       ...transaction,
       id: crypto.randomUUID(),
@@ -176,40 +188,61 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     };
 
     const account = accounts.find((item) => item.name === transaction.account);
-    if (!account) return;
+    if (!account) {
+      showNotice("error", "Choose an account before adding a transaction.");
+      return false;
+    }
 
-    void api.post("/api/transactions", {
-      accountId: Number(account.id),
-      type: transaction.type === "income" ? "INCOME" : "EXPENSE",
-      amount: transaction.amount,
-      currency: account.currency,
-      description: transaction.title,
-      category: transaction.category,
-      idempotencyKey: crypto.randomUUID(),
-    }).then(() => {
+    if (transaction.type === "expense" && transaction.amount > account.balance) {
+      showNotice(
+        "error",
+        `${account.name} has ${account.currency} ${account.balance.toFixed(2)} available. Add money or choose another account.`,
+      );
+      return false;
+    }
+
+    try {
+      await api.post("/api/transactions", {
+        accountId: Number(account.id),
+        type: transaction.type === "income" ? "INCOME" : "EXPENSE",
+        amount: transaction.amount,
+        currency: account.currency,
+        description: transaction.title,
+        category: transaction.category,
+        idempotencyKey: crypto.randomUUID(),
+      });
       setTransactions((previous) => [newTransaction, ...previous]);
       setAccounts((previous) => previous.map((item) =>
         item.id === account.id
           ? { ...item, balance: item.balance + (transaction.type === "income" ? transaction.amount : -transaction.amount) }
           : item,
       ));
-    }).catch((error) => {
+      showNotice("success", "Transaction added successfully.");
+      return true;
+    } catch (error) {
       console.error("Unable to save transaction:", error);
-    });
+      showNotice("error", "Transaction could not be saved. Please try again.");
+      return false;
+    }
   }
 
-  function addAccount(account: Omit<FinanceAccount, "id">) {
-    void api.post("/api/accounts", {
-      ...account,
-      openingBalance: account.balance,
-    }).then((response) => {
+  async function addAccount(account: Omit<FinanceAccount, "id">): Promise<boolean> {
+    try {
+      const response = await api.post("/api/accounts", {
+        ...account,
+        openingBalance: account.balance,
+      });
       setAccounts((previous) => [
         ...previous,
         { ...account, id: String(response.data.id) },
       ]);
-    }).catch((error) => {
+      showNotice("success", `${account.name} was added.`);
+      return true;
+    } catch (error) {
       console.error("Unable to save account:", error);
-    });
+      showNotice("error", "Account could not be added. Please try again.");
+      return false;
+    }
   }
 
   return (
@@ -221,6 +254,8 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
         setCurrency,
         addTransaction,
         addAccount,
+        notice,
+        dismissNotice,
       }}
     >
       {children}

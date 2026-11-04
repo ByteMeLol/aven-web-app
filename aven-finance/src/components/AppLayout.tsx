@@ -1,11 +1,19 @@
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Outlet } from "react-router-dom";
-import { FiMenu, FiX, FiUser } from "react-icons/fi";
+import { FiMenu, FiX, FiUser, FiCheckCircle, FiAlertCircle } from "react-icons/fi";
 import Sidebar from "./Sidebar";
+import { useFinance } from "../context/FinanceContext";
 
 export default function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { notice, dismissNotice } = useFinance();
+
+  useEffect(() => {
+    if (!notice) return;
+    const timeout = window.setTimeout(dismissNotice, 4500);
+    return () => window.clearTimeout(timeout);
+  }, [notice, dismissNotice]);
 
   const closeSidebar = () => setSidebarOpen(false);
 
@@ -92,6 +100,32 @@ export default function AppLayout() {
           </div>
         </main>
       </div>
+
+      {notice && (
+        <div
+          role="alert"
+          className={`fixed bottom-4 left-4 right-4 z-[70] flex items-start gap-3 border px-4 py-3 text-sm font-medium sm:left-auto sm:max-w-md ${
+            notice.type === "success"
+              ? "border-emerald-200 bg-emerald-50 text-emerald-900"
+              : "border-rose-200 bg-rose-50 text-rose-900"
+          }`}
+        >
+          {notice.type === "success" ? (
+            <FiCheckCircle className="mt-0.5 shrink-0 text-emerald-700" size={18} />
+          ) : (
+            <FiAlertCircle className="mt-0.5 shrink-0 text-rose-700" size={18} />
+          )}
+          <span className="flex-1">{notice.message}</span>
+          <button
+            type="button"
+            aria-label="Dismiss notification"
+            onClick={dismissNotice}
+            className="shrink-0 text-current opacity-70 hover:opacity-100"
+          >
+            <FiX size={18} />
+          </button>
+        </div>
+      )}
     </div>
   );
 }

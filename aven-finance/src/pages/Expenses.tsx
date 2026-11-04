@@ -40,18 +40,27 @@ export default function Expenses() {
     const category = String(form.get("category") || "Other");
     const account = String(form.get("account") || "");
 
-    if (
-      !title ||
-      !Number.isFinite(amount) ||
-      amount <= 0 ||
-      !account
-    ) {
+    if (!account) {
+      void addTransaction({
+        title: title || "Transaction",
+        amount: Number.isFinite(amount) && amount > 0 ? amount : 1,
+        type,
+        category,
+        account: "",
+      });
       return;
     }
 
-    addTransaction({ title, amount, type, category, account });
-    formElement.reset();
-    setShowForm(false);
+    if (!title || !Number.isFinite(amount) || amount <= 0) {
+      return;
+    }
+
+    void addTransaction({ title, amount, type, category, account }).then((saved) => {
+      if (saved) {
+        formElement.reset();
+        setShowForm(false);
+      }
+    });
   }
 
   return (

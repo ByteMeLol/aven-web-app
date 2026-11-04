@@ -38,20 +38,33 @@ export default function Home() {
     const category = String(form.get("category") || "Other");
     const account = String(form.get("account") || accounts[0]?.name || "");
 
-    if (!title || !Number.isFinite(amount) || amount <= 0 || !account) {
+    if (!account) {
+      void addTransaction({
+        title: title || "Expense",
+        amount: Number.isFinite(amount) && amount > 0 ? amount : 1,
+        category,
+        account: "",
+        type: "expense",
+      });
       return;
     }
 
-    addTransaction({
+    if (!title || !Number.isFinite(amount) || amount <= 0) {
+      return;
+    }
+
+    void addTransaction({
       title,
       amount,
       category,
       account,
       type: "expense",
+    }).then((saved) => {
+      if (saved) {
+        formElement.reset();
+        setShowForm(false);
+      }
     });
-
-    formElement.reset();
-    setShowForm(false);
   }
 
   return (
@@ -126,7 +139,7 @@ export default function Home() {
             <p className="text-sm font-medium text-slate-500">
               Tracked accounts
             </p>
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
               <FiTrendingUp size={21} />
             </span>
           </div>
