@@ -12,6 +12,7 @@ import type {
   Transaction,
 } from "../lib/format";
 import api from "../lib/api";
+import axios from "axios";
 
 type FinanceContextType = {
   transactions: Transaction[];
@@ -110,6 +111,14 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     setNotice({ type, message });
   }
 
+  function errorMessage(error: unknown, fallback: string) {
+    if (axios.isAxiosError<{ message?: string }>(error)) {
+      const message = error.response?.data?.message;
+      if (typeof message === "string" && message.trim()) return message;
+    }
+    return fallback;
+  }
+
   const dismissNotice = useCallback(() => setNotice(null), []);
 
   async function setCurrency(nextCurrency: CurrencyCode) {
@@ -120,7 +129,10 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       window.dispatchEvent(new Event("aven-finance-changed"));
     } catch (error) {
       console.error("Unable to change Aven Wallet currency:", error);
-      showNotice("error", "Currency could not be changed. Please try again.");
+      showNotice(
+        "error",
+        errorMessage(error, "Currency could not be changed. Please try again."),
+      );
     }
   }
 
@@ -221,7 +233,10 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       return true;
     } catch (error) {
       console.error("Unable to save transaction:", error);
-      showNotice("error", "Transaction could not be saved. Please try again.");
+      showNotice(
+        "error",
+        errorMessage(error, "Transaction could not be saved. Please try again."),
+      );
       return false;
     }
   }
@@ -240,7 +255,10 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       return true;
     } catch (error) {
       console.error("Unable to save account:", error);
-      showNotice("error", "Account could not be added. Please try again.");
+      showNotice(
+        "error",
+        errorMessage(error, "Account could not be added. Please try again."),
+      );
       return false;
     }
   }
