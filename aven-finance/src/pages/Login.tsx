@@ -3,6 +3,8 @@ import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import api from "../lib/api";
+import BrandLogo from "../components/BrandLogo";
+import { FiEye, FiEyeOff, FiMail, FiLock } from "react-icons/fi";
 
 interface LoginResponse {
   accessToken: string;
@@ -15,6 +17,7 @@ export default function Login() {
 
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -73,19 +76,17 @@ export default function Login() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#F5F8F5] px-4 py-10 sm:px-6">
+    <main className="flex min-h-[100svh] items-center justify-center bg-[#F5F8F5] px-4 py-6 sm:px-6 sm:py-10">
       <div className="w-full max-w-md">
         <form
           onSubmit={submit}
-          className="rounded-2xl border border-[#E4EAE5] bg-white p-6 shadow-[0_12px_40px_rgba(20,50,30,0.06)] sm:p-9"
+          className="rounded-2xl border border-[#E4EAE5] bg-white p-5 sm:p-9"
         >
           <Link
             to="/login"
             className="mb-10 inline-flex items-center gap-2 text-xl font-bold tracking-tight text-[#183D2B]"
           >
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#176B4D] text-xl font-bold text-white">
-              a
-            </span>
+            <BrandLogo />
             Aven
           </Link>
 
@@ -94,7 +95,7 @@ export default function Login() {
               WELCOME BACK
             </p>
 
-            <h1 className="text-3xl font-semibold tracking-tight text-[#18231D]">
+            <h1 className="text-2xl font-semibold tracking-tight text-[#18231D] sm:text-3xl">
               Sign in to Aven
             </h1>
 
@@ -112,16 +113,19 @@ export default function Login() {
                 Email address
               </label>
 
-              <input
-                id="email"
-                name="email"
-                type="email"
-                required
-                autoComplete="email"
-                placeholder="you@example.com"
-                onChange={() => setError("")}
-                className="w-full rounded-xl border border-[#DCE4DE] bg-white px-4 py-3 text-sm text-[#18231D] outline-none transition placeholder:text-[#A0AAA3] focus:border-[#176B4D] focus:ring-4 focus:ring-[#176B4D]/10"
-              />
+              <div className="relative">
+                <FiMail className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#91A098]" size={17} />
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  required
+                  autoComplete="email"
+                  placeholder="you@example.com"
+                  onChange={() => setError("")}
+                  className="min-h-12 w-full rounded-xl border border-[#DCE4DE] bg-white py-3 pl-11 pr-4 text-base text-[#18231D] outline-none transition placeholder:text-sm placeholder:text-[#A0AAA3] focus:border-[#176B4D] focus:ring-4 focus:ring-[#176B4D]/10"
+                />
+              </div>
             </div>
 
             <div>
@@ -132,16 +136,22 @@ export default function Login() {
                 Password
               </label>
 
-              <input
-                id="password"
-                name="password"
-                type="password"
-                required
-                autoComplete="current-password"
-                placeholder="Enter your password"
-                onChange={() => setError("")}
-                className="w-full rounded-xl border border-[#DCE4DE] bg-white px-4 py-3 text-sm text-[#18231D] outline-none transition placeholder:text-[#A0AAA3] focus:border-[#176B4D] focus:ring-4 focus:ring-[#176B4D]/10"
-              />
+              <div className="relative">
+                <FiLock className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#91A098]" size={17} />
+                <input
+                  id="password"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  required
+                  autoComplete="current-password"
+                  placeholder="Enter your password"
+                  onChange={() => setError("")}
+                  className="min-h-12 w-full rounded-xl border border-[#DCE4DE] bg-white py-3 pl-11 pr-12 text-base text-[#18231D] outline-none transition placeholder:text-sm placeholder:text-[#A0AAA3] focus:border-[#176B4D] focus:ring-4 focus:ring-[#176B4D]/10"
+                />
+                <button type="button" aria-label={showPassword ? "Hide password" : "Show password"} onClick={() => setShowPassword((visible) => !visible)} className="absolute right-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-lg text-[#718078] hover:bg-[#F0F5F1]">
+                  {showPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
+                </button>
+              </div>
             </div>
           </div>
 

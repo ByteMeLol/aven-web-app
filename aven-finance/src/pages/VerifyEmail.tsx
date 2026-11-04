@@ -3,6 +3,7 @@ import { useState, FormEvent } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 import api from "../lib/api";
+import BrandLogo from "../components/BrandLogo";
 
 interface LocationState {
   email?: string;
@@ -70,9 +71,7 @@ export default function VerifyEmail() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center gap-2">
-            <div className="w-10 h-10 rounded-xl bg-[#145C43] flex items-center justify-center">
-              <span className="text-white text-xl font-bold">A</span>
-            </div>
+            <BrandLogo size="large" />
             <span className="text-2xl font-bold text-[#173D30]">
               aven
             </span>

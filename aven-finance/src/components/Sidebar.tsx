@@ -9,6 +9,7 @@ import {
   FiUser,
   FiX,
 } from 'react-icons/fi'
+import BrandLogo from "./BrandLogo";
 
 type SidebarProps = {
   onNavigate?: () => void
@@ -37,9 +38,7 @@ export default function Sidebar({
           onClick={onNavigate}
           className="flex items-center gap-3"
         >
-          <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-700 text-lg font-bold text-white">
-            A
-          </span>
+          <BrandLogo size="large" />
 
           <span className="text-xl font-bold tracking-tight text-slate-900">
             Aven

@@ -3,12 +3,16 @@ import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import api from "../lib/api";
+import BrandLogo from "../components/BrandLogo";
+import { FiEye, FiEyeOff } from "react-icons/fi";
 
 export default function Register() {
   const navigate = useNavigate();
 
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -64,19 +68,17 @@ export default function Register() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#F5F8F5] px-4 py-10 sm:px-6">
+    <main className="flex min-h-[100svh] items-center justify-center bg-[#F5F8F5] px-4 py-6 sm:px-6 sm:py-10">
       <div className="w-full max-w-md">
         <form
           onSubmit={submit}
-          className="rounded-2xl border border-[#E4EAE5] bg-white p-6 shadow-[0_12px_40px_rgba(20,50,30,0.06)] sm:p-9"
+          className="rounded-2xl border border-[#E4EAE5] bg-white p-5 sm:p-9"
         >
           <Link
             to="/login"
             className="mb-8 inline-flex items-center gap-2 text-xl font-bold tracking-tight text-[#183D2B]"
           >
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#176B4D] text-xl font-bold text-white">
-              a
-            </span>
+            <BrandLogo />
             Aven
           </Link>
 
@@ -85,7 +87,7 @@ export default function Register() {
               GET STARTED
             </p>
 
-            <h1 className="text-3xl font-semibold tracking-tight text-[#18231D]">
+            <h1 className="text-2xl font-semibold tracking-tight text-[#18231D] sm:text-3xl">
               Create your account
             </h1>
 
@@ -112,7 +114,7 @@ export default function Register() {
                 maxLength={100}
                 placeholder="Your first name"
                 onChange={() => setError("")}
-                className="w-full rounded-xl border border-[#DCE4DE] bg-white px-4 py-3 text-sm text-[#18231D] outline-none transition placeholder:text-[#A0AAA3] focus:border-[#176B4D] focus:ring-4 focus:ring-[#176B4D]/10"
+                className="min-h-12 w-full rounded-xl border border-[#DCE4DE] bg-white px-4 py-3 text-base text-[#18231D] outline-none transition placeholder:text-sm placeholder:text-[#A0AAA3] focus:border-[#176B4D] focus:ring-4 focus:ring-[#176B4D]/10"
               />
             </div>
 
@@ -133,7 +135,7 @@ export default function Register() {
                 maxLength={100}
                 placeholder="Your last name"
                 onChange={() => setError("")}
-                className="w-full rounded-xl border border-[#DCE4DE] bg-white px-4 py-3 text-sm text-[#18231D] outline-none transition placeholder:text-[#A0AAA3] focus:border-[#176B4D] focus:ring-4 focus:ring-[#176B4D]/10"
+                className="min-h-12 w-full rounded-xl border border-[#DCE4DE] bg-white px-4 py-3 text-base text-[#18231D] outline-none transition placeholder:text-sm placeholder:text-[#A0AAA3] focus:border-[#176B4D] focus:ring-4 focus:ring-[#176B4D]/10"
               />
             </div>
 
@@ -154,7 +156,7 @@ export default function Register() {
                 maxLength={254}
                 placeholder="you@example.com"
                 onChange={() => setError("")}
-                className="w-full rounded-xl border border-[#DCE4DE] bg-white px-4 py-3 text-sm text-[#18231D] outline-none transition placeholder:text-[#A0AAA3] focus:border-[#176B4D] focus:ring-4 focus:ring-[#176B4D]/10"
+                className="min-h-12 w-full rounded-xl border border-[#DCE4DE] bg-white px-4 py-3 text-base text-[#18231D] outline-none transition placeholder:text-sm placeholder:text-[#A0AAA3] focus:border-[#176B4D] focus:ring-4 focus:ring-[#176B4D]/10"
               />
             </div>
 
@@ -166,18 +168,23 @@ export default function Register() {
                 Password
               </label>
 
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="new-password"
-                required
-                minLength={8}
-                maxLength={72}
-                placeholder="At least 8 characters"
-                onChange={() => setError("")}
-                className="w-full rounded-xl border border-[#DCE4DE] bg-white px-4 py-3 text-sm text-[#18231D] outline-none transition placeholder:text-[#A0AAA3] focus:border-[#176B4D] focus:ring-4 focus:ring-[#176B4D]/10"
-              />
+              <div className="relative">
+                <input
+                  id="password"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  autoComplete="new-password"
+                  required
+                  minLength={8}
+                  maxLength={72}
+                  placeholder="At least 8 characters"
+                  onChange={() => setError("")}
+                  className="min-h-12 w-full rounded-xl border border-[#DCE4DE] bg-white px-4 py-3 pr-12 text-base text-[#18231D] outline-none transition placeholder:text-sm placeholder:text-[#A0AAA3] focus:border-[#176B4D] focus:ring-4 focus:ring-[#176B4D]/10"
+                />
+                <button type="button" aria-label={showPassword ? "Hide password" : "Show password"} onClick={() => setShowPassword((visible) => !visible)} className="absolute right-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-lg text-[#718078] hover:bg-[#F0F5F1]">
+                  {showPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
+                </button>
+              </div>
             </div>
 
             <div>
@@ -188,18 +195,23 @@ export default function Register() {
                 Confirm password
               </label>
 
-              <input
-                id="confirmPassword"
-                name="confirmPassword"
-                type="password"
-                autoComplete="new-password"
-                required
-                minLength={8}
-                maxLength={72}
-                placeholder="Re-enter your password"
-                onChange={() => setError("")}
-                className="w-full rounded-xl border border-[#DCE4DE] bg-white px-4 py-3 text-sm text-[#18231D] outline-none transition placeholder:text-[#A0AAA3] focus:border-[#176B4D] focus:ring-4 focus:ring-[#176B4D]/10"
-              />
+              <div className="relative">
+                <input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type={showConfirmPassword ? "text" : "password"}
+                  autoComplete="new-password"
+                  required
+                  minLength={8}
+                  maxLength={72}
+                  placeholder="Re-enter your password"
+                  onChange={() => setError("")}
+                  className="min-h-12 w-full rounded-xl border border-[#DCE4DE] bg-white px-4 py-3 pr-12 text-base text-[#18231D] outline-none transition placeholder:text-sm placeholder:text-[#A0AAA3] focus:border-[#176B4D] focus:ring-4 focus:ring-[#176B4D]/10"
+                />
+                <button type="button" aria-label={showConfirmPassword ? "Hide password" : "Show password"} onClick={() => setShowConfirmPassword((visible) => !visible)} className="absolute right-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-lg text-[#718078] hover:bg-[#F0F5F1]">
+                  {showConfirmPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
+                </button>
+              </div>
             </div>
           </div>
 
